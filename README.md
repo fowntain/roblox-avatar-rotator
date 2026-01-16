@@ -55,7 +55,7 @@ pythonw main.pyw
 
 
 
-## Configuration
+## Usage
 
 1. **Launch the Application:** A tray icon will appear in your taskbar (system tray).
 2. **Open Settings:** Right-click the tray icon and select **Settings**.
