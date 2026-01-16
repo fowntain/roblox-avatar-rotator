@@ -33,7 +33,7 @@ pip install -r requirements.txt
 
 5. Compile the application:
 ```bash
-pyinstaller --noconsole --onefile --name "RobloxRotator" --hidden-import=winotify --hidden-import=pystray src/main.pyw
+pyinstaller --noconsole --onefile --name "RobloxRotator" --hidden-import=winotify --hidden-import=pystray main.pyw
 ```
 6. The executable will be generated in the `dist` folder.
 
@@ -41,7 +41,7 @@ pyinstaller --noconsole --onefile --name "RobloxRotator" --hidden-import=winotif
 ### Run as Python Script (Developer)
 1. Install [Python](https://www.python.org/downloads/).
 2. Clone or download this repository.
-3. Open a terminal in the repository folder.
+3. Open a terminal in the `src` folder.
 4. Install dependencies:
 ```bash
 pip install -r requirements.txt
@@ -49,7 +49,7 @@ pip install -r requirements.txt
 ```
 5. Run the script:
 ```bash
-pythonw src/avatar_pro.pyw
+pythonw main.pyw
 
 ```
 
