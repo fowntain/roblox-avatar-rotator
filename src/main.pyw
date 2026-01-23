@@ -365,7 +365,7 @@ def open_settings():
             messagebox.showwarning("Warning", "No outfits found or API error.")
             return
         
-        listbox.delete(0, END)
+        listbox.delete("all")
         fetched_map.clear()
         
         saved_ids = []
@@ -379,14 +379,14 @@ def open_settings():
             listbox.insert(END, o["name"])
             fetched_map[o["name"]] = o["id"]
             if o["id"] in saved_ids:
-                listbox.selection_set(i)
+                listbox.activate(i)
 
     ctk.CTkButton(root, text="Fetch My Outfits", command=fetch_outfits).pack(pady=5)
 
     if "outfits" in cfg and cfg["outfits"] and isinstance(cfg["outfits"][0], dict):
         for i, o in enumerate(cfg["outfits"]):
             listbox.insert(END, o["name"])
-            listbox.selection_set(i)
+            listbox.activate(i)
             fetched_map[o["name"]] = o["id"]
 
     ctk.CTkLabel(root, text="Cooldown (seconds):").pack(pady=(10, 2))
