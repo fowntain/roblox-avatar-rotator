@@ -439,6 +439,9 @@ def open_settings():
     tk.Button(root, text="Save & Close", command=save, height=2, width=20, bg="#dddddd").pack(pady=10)
     root.mainloop()
 
+def open_settings_window():
+    threading.Thread(target=open_settings, daemon=True).start()
+
 # sys tray stuff
 # if ur reading this code hi and pls help me by improving the ui, make a pr thanks :)
 def create_image():
@@ -466,7 +469,7 @@ def get_menu():
     toggle_text = "Stop" if rotator.active else "Start"
     return pystray.Menu(
         item(toggle_text, on_toggle),
-        item('Settings', open_settings, enabled=lambda i: not rotator.active),
+        item('Settings', open_settings_window, enabled=lambda i: not rotator.active),
         item('View Logs', lambda: open_logs()),
         item('End Program', on_exit)
     )
