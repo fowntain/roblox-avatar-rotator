@@ -324,15 +324,15 @@ def open_settings():
     if rotator.active: return 
     root = ctk.CTk()
     root.title("Settings | Roblox Avatar Rotator")
-    root.geometry("450x550")
+    root.geometry("450x650")
     
     cfg = ConfigManager.load()
     
     # cookie
     ctk.CTkLabel(root, text="Roblox Cookie (.ROBLOSECURITY):").pack(pady=(10, 5))
-    lbl_warn = ctk.CTkLabel(root, text="ⓘ Info: This is only used to send the avatar change requests.\n Do not share your cookie with anyone.", fg_color="red", font=("Arial", 8))
+    lbl_warn = ctk.CTkLabel(root, text="ⓘ Info: This is only used to send the avatar change requests.\n Do not share your cookie with anyone.", fg_color="red", font=("Arial", 12), width=450)
     lbl_warn.pack(pady=2)
-    cookie_entry = ctk.CTkEntry(root, width=60, show="*")
+    cookie_entry = ctk.CTkEntry(root, width=400, show="*")
     cookie_entry.pack(pady=5)
     if "cookie" in cfg: cookie_entry.insert(0, cfg["cookie"])
 
@@ -340,7 +340,7 @@ def open_settings():
     ctk.CTkLabel(root, text="Selected Outfits:").pack(pady=(10, 2))
     
     # listbox
-    listbox = CTkListbox(root, multiple_selection=True, width=50, height=10)
+    listbox = CTkListbox(root, multiple_selection=True, width=450, height=150)
     listbox.pack(pady=5)
 
     fetched_map = {}
@@ -390,18 +390,18 @@ def open_settings():
             fetched_map[o["name"]] = o["id"]
 
     ctk.CTkLabel(root, text="Cooldown (seconds):").pack(pady=(10, 2))
-    interval_spin = CTkSpinbox(root, min_value=1, max_value=300, width=5)
+    interval_spin = CTkSpinbox(root, min_value=1, max_value=300, width=100)
     interval_spin.pack()
     current_interval = cfg.get("interval", 5)
     interval_spin.set(current_interval)
 
     # warning
-    lbl_warn = ctk.CTkLabel(root, text="⚠ Warning: < 3s uses high bandwidth & may hit API limits.", fg_color="red", font=("Arial", 8))
+    lbl_warn = ctk.CTkLabel(root, text="⚠ Warning: < 3s uses high bandwidth & may hit API limits.", fg_color="red", font=("Arial", 12), width=450)
     lbl_warn.pack(pady=2)
 
     # startup
     startup_var = ctk.BooleanVar(value=ConfigManager.get_startup_status())
-    ctk.CTkCheckBox(root, text="Run on Windows Startup", variable=startup_var).pack(pady=10)
+    ctk.CTkCheckBox(root, text="Run on Windows Startup", variable=startup_var).pack(pady=30)
 
     def save():
         selected_indices = listbox.curselection()
