@@ -319,167 +319,202 @@ class AvatarRotator:
         self.running = False
         log("Program terminated by user.", "info")
 
-# settings menu/gui
-def open_settings():
-    if rotator.active: return 
-    root = ctk.CTk()
-    root.title("Settings | Roblox Avatar Rotator")
-    root.geometry("450x650")
-    
-    cfg = ConfigManager.load()
-    
-    # cookie
-    ctk.CTkLabel(root, text="Roblox Cookie (.ROBLOSECURITY):").pack(pady=(10, 5))
-    lbl_warn = ctk.CTkLabel(root, text="ⓘ Info: This is only used to send the avatar change requests.\n Do not share your cookie with anyone.", fg_color="red", font=("Arial", 12), width=450)
-    lbl_warn.pack(pady=2)
-    cookie_entry = ctk.CTkEntry(root, width=400, show="*")
-    cookie_entry.pack(pady=5)
-    if "cookie" in cfg: cookie_entry.insert(0, cfg["cookie"])
+class UIManager:
+    def __init__(self):
+        self.root = ctk.CTk()
+        self.root.withdraw()
 
-    # outfits
-    ctk.CTkLabel(root, text="Selected Outfits:").pack(pady=(10, 2))
-    
-    # listbox
-    listbox = CTkListbox(root, multiple_selection=True, width=450, height=150)
-    listbox.pack(pady=5)
+        self.settings_ui = None
 
-    fetched_map = {}
+        self.tray_icon = pystray.Icon("RobloxRotator", self.create_tray_image(), menu=self.get_tray_menu())
+        self.tray_icon.run_detached(setup=self.icon_updater)
 
-    def fetch_outfits():
-        cookie = cookie_entry.get().strip()
-        if not cookie:
-            messagebox.showerror("Error", "Please enter a cookie first.")
+    def start_main_loop(self):
+        self.root.mainloop()
+
+    def open_settings(self):
+        if rotator.active: return 
+        if self.settings_ui:
+            self.settings_ui.focus_force()
             return
 
-        rotator.bot.update_cookie(cookie)
+        root = ctk.CTkToplevel(self.root)
+        root.withdraw() # Hide window until it is ready
         
-        user = rotator.bot.get_authenticated_user()
-        if not user:
-            messagebox.showerror("Error", "Invalid Cookie. Could not authenticate.")
-            return
+        self.settings_ui = root
+
+        root.title("Settings | Roblox Avatar Rotator")
+        root.geometry(self.center_window_to_display(root, 450, 650, root._get_window_scaling()))
+        root.protocol("WM_DELETE_WINDOW", self.close_settings)
+
+        cfg = ConfigManager.load()
+        
+        # cookie
+        ctk.CTkLabel(root, text="Roblox Cookie (.ROBLOSECURITY):").pack(pady=(10, 5))
+        lbl_warn = ctk.CTkLabel(root, text="ⓘ Info: This is only used to send the avatar change requests.\n Do not share your cookie with anyone.", fg_color="red", font=("Arial", 12), width=450)
+        lbl_warn.pack(pady=2)
+        cookie_entry = ctk.CTkEntry(root, width=400, show="*")
+        cookie_entry.pack(pady=5)
+        if "cookie" in cfg: cookie_entry.insert(0, cfg["cookie"])
+
+        # outfits
+        ctk.CTkLabel(root, text="Selected Outfits:").pack(pady=(10, 2))
+        
+        # listbox
+        listbox = CTkListbox(root, multiple_selection=True, width=450, height=150)
+        listbox.pack(pady=5)
+
+        fetched_map = {}
+
+        def fetch_outfits():
+            cookie = cookie_entry.get().strip()
+            if not cookie:
+                messagebox.showerror("Error", "Please enter a cookie first.")
+                return
+
+            rotator.bot.update_cookie(cookie)
             
-        messagebox.showinfo("Wait", "Fetching outfits... this may take a moment.")
-        
-        outfits = rotator.bot.fetch_user_outfits()
-        if not outfits:
-            messagebox.showwarning("Warning", "No outfits found or API error.")
-            return
-        
-        listbox.delete("all")
-        fetched_map.clear()
-        
-        saved_ids = []
-        if "outfits" in cfg and cfg["outfits"]:
-            if isinstance(cfg["outfits"][0], dict):
-                saved_ids = [o["id"] for o in cfg["outfits"]]
-            else:
-                saved_ids = cfg["outfits"]
+            user = rotator.bot.get_authenticated_user()
+            if not user:
+                messagebox.showerror("Error", "Invalid Cookie. Could not authenticate.")
+                return
+                
+            messagebox.showinfo("Wait", "Fetching outfits... this may take a moment.")
+            
+            outfits = rotator.bot.fetch_user_outfits()
+            if not outfits:
+                messagebox.showwarning("Warning", "No outfits found or API error.")
+                return
+            
+            listbox.delete("all")
+            fetched_map.clear()
+            
+            saved_ids = []
+            if "outfits" in cfg and cfg["outfits"]:
+                if isinstance(cfg["outfits"][0], dict):
+                    saved_ids = [o["id"] for o in cfg["outfits"]]
+                else:
+                    saved_ids = cfg["outfits"]
 
-        for i, o in enumerate(outfits):
-            listbox.insert(END, o["name"])
-            fetched_map[o["name"]] = o["id"]
-            if o["id"] in saved_ids:
+            for i, o in enumerate(outfits):
+                listbox.insert(END, o["name"])
+                fetched_map[o["name"]] = o["id"]
+                if o["id"] in saved_ids:
+                    listbox.activate(i)
+
+        ctk.CTkButton(root, text="Fetch My Outfits", command=fetch_outfits).pack(pady=5)
+
+        if "outfits" in cfg and cfg["outfits"] and isinstance(cfg["outfits"][0], dict):
+            for i, o in enumerate(cfg["outfits"]):
+                listbox.insert(END, o["name"])
                 listbox.activate(i)
+                fetched_map[o["name"]] = o["id"]
 
-    ctk.CTkButton(root, text="Fetch My Outfits", command=fetch_outfits).pack(pady=5)
+        ctk.CTkLabel(root, text="Cooldown (seconds):").pack(pady=(10, 2))
+        interval_spin = CTkSpinbox(root, min_value=1, max_value=300, width=100)
+        interval_spin.pack()
+        current_interval = cfg.get("interval", 5)
+        interval_spin.set(current_interval)
 
-    if "outfits" in cfg and cfg["outfits"] and isinstance(cfg["outfits"][0], dict):
-        for i, o in enumerate(cfg["outfits"]):
-            listbox.insert(END, o["name"])
-            listbox.activate(i)
-            fetched_map[o["name"]] = o["id"]
+        # warning
+        lbl_warn = ctk.CTkLabel(root, text="⚠ Warning: < 3s uses high bandwidth & may hit API limits.", fg_color="red", font=("Arial", 12), width=450)
+        lbl_warn.pack(pady=2)
 
-    ctk.CTkLabel(root, text="Cooldown (seconds):").pack(pady=(10, 2))
-    interval_spin = CTkSpinbox(root, min_value=1, max_value=300, width=100)
-    interval_spin.pack()
-    current_interval = cfg.get("interval", 5)
-    interval_spin.set(current_interval)
+        # startup
+        startup_var = ctk.BooleanVar(value=ConfigManager.get_startup_status())
+        ctk.CTkCheckBox(root, text="Run on Windows Startup", variable=startup_var).pack(pady=30)
 
-    # warning
-    lbl_warn = ctk.CTkLabel(root, text="⚠ Warning: < 3s uses high bandwidth & may hit API limits.", fg_color="red", font=("Arial", 12), width=450)
-    lbl_warn.pack(pady=2)
+        def save():
+            selected_indices = listbox.curselection()
+            if not selected_indices:
+                messagebox.showwarning("Warning", "No outfits selected!")
+                return
 
-    # startup
-    startup_var = ctk.BooleanVar(value=ConfigManager.get_startup_status())
-    ctk.CTkCheckBox(root, text="Run on Windows Startup", variable=startup_var).pack(pady=30)
+            selected_outfits = []
+            for i in selected_indices:
+                name = listbox.get(i)
+                if name in fetched_map:
+                    selected_outfits.append({"id": fetched_map[name], "name": name})
+            
+            try:
+                new_interval = int(interval_spin.get())
+            except:
+                new_interval = 5
 
-    def save():
-        selected_indices = listbox.curselection()
-        if not selected_indices:
-            messagebox.showwarning("Warning", "No outfits selected!")
-            return
+            new_cfg = {
+                "cookie": cookie_entry.get().strip(),
+                "outfits": selected_outfits,
+                "interval": new_interval
+            }
+            ConfigManager.save(new_cfg)
+            ConfigManager.toggle_startup(startup_var.get())
+            
+            rotator.outfit_ids = [o["id"] for o in selected_outfits]
+            rotator.outfit_names = [o["name"] for o in selected_outfits]
+            rotator.interval = new_interval
+            
+            messagebox.showinfo("Saved", "Settings saved!")
+            self.close_settings()
 
-        selected_outfits = []
-        for i in selected_indices:
-            name = listbox.get(i)
-            if name in fetched_map:
-                selected_outfits.append({"id": fetched_map[name], "name": name})
+        ctk.CTkLabel(root, text="Tool made by fowntain").pack(pady=(10, 5))
         
-        try:
-            new_interval = int(interval_spin.get())
-        except:
-            new_interval = 5
+        ctk.CTkButton(root, text="Save & Close", command=save, height=2, width=20, bg_color="#dddddd").pack(pady=10)
 
-        new_cfg = {
-            "cookie": cookie_entry.get().strip(),
-            "outfits": selected_outfits,
-            "interval": new_interval
-        }
-        ConfigManager.save(new_cfg)
-        ConfigManager.toggle_startup(startup_var.get())
-        
-        rotator.outfit_ids = [o["id"] for o in selected_outfits]
-        rotator.outfit_names = [o["name"] for o in selected_outfits]
-        rotator.interval = new_interval
-        
-        messagebox.showinfo("Saved", "Settings saved!")
-        root.destroy()
-
-    ctk.CTkLabel(root, text="Tool made by fowntain").pack(pady=(10, 5))
+        root.deiconify() # Show window
     
-    ctk.CTkButton(root, text="Save & Close", command=save, height=2, width=20, bg_color="#dddddd").pack(pady=10)
-    root.mainloop()
+    def close_settings(self):
+        if self.settings_ui is None: return
+        self.settings_ui.destroy()
+        self.settings_ui = None
 
-# sys tray stuff
-# if ur reading this code hi and pls help me by improving the ui, make a pr thanks :)
-def create_image():
-    color = (0, 255, 100) if rotator.active else (255, 50, 50)
-    image = Image.new('RGB', (64, 64), color=(30, 30, 30))
-    dc = ImageDraw.Draw(image)
-    dc.ellipse((16, 16, 48, 48), fill=color)
-    return image
+    def center_window_to_display(self, Screen: ctk.CTk, width: int, height: int, scale_factor: float = 1.0):
+        """Centers the window to the main display/monitor"""
+        screen_width = Screen.winfo_screenwidth()
+        screen_height = Screen.winfo_screenheight()
+        x = int(((screen_width/2) - (width/2)) * scale_factor)
+        y = int(((screen_height/2) - (height/1.5)) * scale_factor)
+        return f"{width}x{height}+{x}+{y}"
 
-def update_icon(icon): icon.icon = create_image()
+    # sys tray stuff
+    # if ur reading this code hi and pls help me by improving the ui, make a pr thanks :)
+    def create_tray_image(self):
+        color = (0, 255, 100) if rotator.active else (255, 50, 50)
+        image = Image.new('RGB', (64, 64), color=(30, 30, 30))
+        dc = ImageDraw.Draw(image)
+        dc.ellipse((16, 16, 48, 48), fill=color)
+        return image
 
-def on_toggle(icon, item):
-    if rotator.active: rotator.stop_rotation()
-    else: rotator.start_rotation()
-    update_icon(icon)
+    def update_tray_icon(self): self.tray_icon.icon = self.create_tray_image()
 
-def on_exit(icon, item):
-    rotator.terminate()
-    icon.stop()
-    sys.exit()
+    def icon_updater(self, icon):
+        self.tray_icon.visible = True
+        while rotator.running:
+            self.tray_icon.menu = self.get_tray_menu()
+            self.update_tray_icon()
+            time.sleep(1)
+    
+    def get_tray_menu(self):
+        toggle_text = "Stop" if rotator.active else "Start"
+        return pystray.Menu(
+            item(toggle_text, self.on_toggle),
+            item('Settings', self.open_settings, enabled=lambda i: not rotator.active),
+            item('View Logs', lambda: open_logs()),
+            item('End Program', self.on_exit)
+            )
+
+    def on_toggle(self):
+        if rotator.active: rotator.stop_rotation()
+        else: rotator.start_rotation()
+        self.update_tray_icon()
+
+    def on_exit(self, icon, item):
+        rotator.terminate()
+        self.tray_icon.stop()
+        self.root.quit()
+        sys.exit()
 
 rotator = AvatarRotator()
-
-def get_menu():
-    toggle_text = "Stop" if rotator.active else "Start"
-    return pystray.Menu(
-        item(toggle_text, on_toggle),
-        item('Settings', open_settings, enabled=lambda i: not rotator.active),
-        item('View Logs', lambda: open_logs()),
-        item('End Program', on_exit)
-    )
-
-icon = pystray.Icon("RobloxRotator", create_image(), menu=get_menu())
-
-def icon_updater(icon):
-    icon.visible = True
-    while rotator.running:
-        icon.menu = get_menu()
-        update_icon(icon)
-        time.sleep(1)
+ui_manager = UIManager()
 
 log("Application Started.", "info")
-icon.run(setup=icon_updater)
+ui_manager.start_main_loop()
