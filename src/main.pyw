@@ -8,8 +8,10 @@ import json
 import os
 import sys
 import logging
-import tkinter as tk
-from tkinter import messagebox, Listbox, MULTIPLE, END
+import customtkinter as ctk
+from CTkListbox import *
+from CTkSpinbox import *
+from tkinter import messagebox, MULTIPLE, END
 import winreg
 import pystray
 from PIL import Image, ImageDraw
@@ -320,25 +322,25 @@ class AvatarRotator:
 # settings menu/gui
 def open_settings():
     if rotator.active: return 
-    root = tk.Tk()
+    root = ctk.CTk()
     root.title("Settings | Roblox Avatar Rotator")
     root.geometry("450x550")
     
     cfg = ConfigManager.load()
     
     # cookie
-    tk.Label(root, text="Roblox Cookie (.ROBLOSECURITY):").pack(pady=(10, 5))
-    lbl_warn = tk.Label(root, text="ⓘ Info: This is only used to send the avatar change requests.\n Do not share your cookie with anyone.", fg="red", font=("Arial", 8))
+    ctk.CTkLabel(root, text="Roblox Cookie (.ROBLOSECURITY):").pack(pady=(10, 5))
+    lbl_warn = ctk.CTkLabel(root, text="ⓘ Info: This is only used to send the avatar change requests.\n Do not share your cookie with anyone.", fg_color="red", font=("Arial", 8))
     lbl_warn.pack(pady=2)
-    cookie_entry = tk.Entry(root, width=60, show="*")
+    cookie_entry = ctk.CTkEntry(root, width=60, show="*")
     cookie_entry.pack(pady=5)
     if "cookie" in cfg: cookie_entry.insert(0, cfg["cookie"])
 
     # outfits
-    tk.Label(root, text="Selected Outfits:").pack(pady=(10, 2))
+    ctk.CTkLabel(root, text="Selected Outfits:").pack(pady=(10, 2))
     
     # listbox
-    listbox = Listbox(root, selectmode=MULTIPLE, width=50, height=10)
+    listbox = CTkListbox(root, multiple_selection=True, width=50, height=10)
     listbox.pack(pady=5)
 
     fetched_map = {}
@@ -379,7 +381,7 @@ def open_settings():
             if o["id"] in saved_ids:
                 listbox.selection_set(i)
 
-    tk.Button(root, text="Fetch My Outfits", command=fetch_outfits).pack(pady=5)
+    ctk.CTkButton(root, text="Fetch My Outfits", command=fetch_outfits).pack(pady=5)
 
     if "outfits" in cfg and cfg["outfits"] and isinstance(cfg["outfits"][0], dict):
         for i, o in enumerate(cfg["outfits"]):
@@ -387,20 +389,19 @@ def open_settings():
             listbox.selection_set(i)
             fetched_map[o["name"]] = o["id"]
 
-    tk.Label(root, text="Cooldown (seconds):").pack(pady=(10, 2))
-    interval_spin = tk.Spinbox(root, from_=1, to=300, width=5)
+    ctk.CTkLabel(root, text="Cooldown (seconds):").pack(pady=(10, 2))
+    interval_spin = CTkSpinbox(root, min_value=1, max_value=300, width=5)
     interval_spin.pack()
     current_interval = cfg.get("interval", 5)
-    interval_spin.delete(0, "end")
-    interval_spin.insert(0, current_interval)
+    interval_spin.set(current_interval)
 
     # warning
-    lbl_warn = tk.Label(root, text="⚠ Warning: < 3s uses high bandwidth & may hit API limits.", fg="red", font=("Arial", 8))
+    lbl_warn = ctk.CTkLabel(root, text="⚠ Warning: < 3s uses high bandwidth & may hit API limits.", fg_color="red", font=("Arial", 8))
     lbl_warn.pack(pady=2)
 
     # startup
-    startup_var = tk.BooleanVar(value=ConfigManager.get_startup_status())
-    tk.Checkbutton(root, text="Run on Windows Startup", variable=startup_var).pack(pady=10)
+    startup_var = ctk.BooleanVar(value=ConfigManager.get_startup_status())
+    ctk.CTkCheckBox(root, text="Run on Windows Startup", variable=startup_var).pack(pady=10)
 
     def save():
         selected_indices = listbox.curselection()
@@ -434,9 +435,9 @@ def open_settings():
         messagebox.showinfo("Saved", "Settings saved!")
         root.destroy()
 
-    tk.Label(root, text="Tool made by fowntain").pack(pady=(10, 5))
+    ctk.CTkLabel(root, text="Tool made by fowntain").pack(pady=(10, 5))
     
-    tk.Button(root, text="Save & Close", command=save, height=2, width=20, bg="#dddddd").pack(pady=10)
+    ctk.CTkButton(root, text="Save & Close", command=save, height=2, width=20, bg_color="#dddddd").pack(pady=10)
     root.mainloop()
 
 # sys tray stuff

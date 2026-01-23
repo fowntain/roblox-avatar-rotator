@@ -3,3 +3,6 @@ pystray
 Pillow
 winotify
 pyinstaller
+customtkinter
+CTkListbox
+CTkSpinbox
